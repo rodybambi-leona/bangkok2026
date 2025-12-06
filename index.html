@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>勇闖曼谷 chill 嗨嗨</title>
+    
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Mitr:wght@300;500;600&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Noto Sans TC', sans-serif],
+                        thai: ['Mitr', sans-serif], // 泰式風格圓體
+                    },
+                    colors: {
+                        // 泰式復古撞色配色 (靈感來自 Kin 船粉與曼谷插畫)
+                        thai: {
+                            bg: '#FDFBF7',      // 香米白背景 (溫暖米色)
+                            green: '#556B2F',   // 羅勒綠 (主色調，像圖二的綠)
+                            darkGreen: '#3A4A1E', // 深綠文字
+                            yellow: '#FFD54F',  // 芒果黃 (強調色)
+                            orange: '#FF8A65',  // 泰奶橘 (點綴)
+                            pink: '#F06292',    // 浮動按鈕粉紅 (參考圖四)
+                            card: '#FFFFFF',
+                            gray: '#E0E0E0',
+                        }
+                    },
+                    boxShadow: {
+                        'soft': '0 8px 30px rgba(0,0,0,0.08)',
+                        'card': '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)',
+                        'float': '0 10px 25px -5px rgba(240, 98, 146, 0.5)', 
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { 
+            -webkit-tap-highlight-color: transparent; 
+            background-color: #FDFBF7; 
+        }
+        .pb-safe { padding-bottom: env(safe-area-inset-bottom, 20px); }
+        /* 隱藏滾動條 */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        /* 自定義 checkbox 樣式 (模仿圖四) */
+        .custom-checkbox {
+            appearance: none;
+            background-color: white;
+            border: 2px solid #E0E0E0;
+            border-radius: 12px;
+            width: 28px;
+            height: 28px;
+            display: inline-grid;
+            place-content: center;
+            transition: all 0.2s ease;
+        }
+        .custom-checkbox::before {
+            content: "";
+            width: 14px;
+            height: 14px;
+            transform: scale(0);
+            transition: 0.15s transform ease-in-out;
+            box-shadow: inset 14px 14px white;
+            transform-origin: center;
+            clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%);
+        }
+        .custom-checkbox:checked {
+            background-color: #556B2F; /* 羅勒綠 */
+            border-color: #556B2F;
+        }
+        .custom-checkbox:checked::before {
+            transform: scale(1);
+        }
+    </style>
+</head>
+<body class="bg-thai-bg text-thai-darkGreen font-sans">
+
+<div id="app" class="min-h-screen relative overflow-hidden pb-24">
+
+    <header class="bg-thai-green text-white pt-10 pb-20 px-6 rounded-b-[40px] relative shadow-lg">
+        <div class="absolute top-[-20%] right-[-10%] w-48 h-48 bg-thai-yellow rounded-full opacity-10 blur-2xl"></div>
+        <div class="absolute bottom-[10%] left-[-10%] w-32 h-32 bg-white rounded-full opacity-10 blur-xl"></div>
+
+        <div class="relative z-10 flex justify-between items-start mb-4">
+            <div>
+                <span class="inline-block bg-white/20 backdrop-blur text-xs font-bold px-3 py-1 rounded-full mb-2 text-thai-yellow border border-white/20">
+                    BKK 2026 TRIP
+                </span>
+                <h1 class="text-3xl font-bold font-thai tracking-wide leading-tight drop-shadow-md">
+                    勇闖曼谷<br>chill 嗨嗨 <i class="fas fa-umbrella-beach text-thai-yellow ml-1"></i>
+                </h1>
+                <p class="mt-2 opacity-90 text-sm font-medium">📅 2026/01/01 (四) - 01/06 (二)</p>
+            </div>
+            
+            <div class="bg-white/10 backdrop-blur-md rounded-2xl p-3 text-center flex flex-col items-center border border-white/20 shadow-sm min-w-[70px]">
+                <i class="fas fa-sun text-thai-yellow text-2xl mb-1 drop-shadow-sm"></i>
+                <span class="text-lg font-bold font-thai">32°</span>
+                <span class="text-[10px] opacity-90">晴天</span>
+            </div>
+        </div>
+
+        <div class="mt-2 flex items-center bg-black/20 backdrop-blur-sm rounded-xl px-4 py-2 w-fit">
+            <span class="text-xs mr-2 opacity-90">距離出發</span>
+            <span class="font-thai font-bold text-lg text-thai-yellow mr-1">{{ countdown.days }}</span>
+            <span class="text-xs mr-2">天</span>
+            <span class="font-thai font-bold text-lg text-thai-yellow mr-1">{{ countdown.hours }}</span>
+            <span class="text-xs">時</span>
+        </div>
+    </header>
+
+    <main class="-mt-12 px-5 relative z-20">
+        
+        <div class="bg-white rounded-2xl p-1.5 shadow-md flex mb-6 mx-2">
+            <button v-for="(tab, key) in tabs" :key="key" @click="activeTab = key"
+                    class="flex-1 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 flex items-center justify-center gap-2"
+                    :class="activeTab === key ? 'bg-thai-green text-white shadow-sm' : 'text-gray-400 hover:text-gray-600'">
+                <i :class="tab.icon"></i>
+                {{ tab.label }}
+            </button>
+        </div>
+
+        <transition name="fade" mode="out-in">
+            
+            <div v-if="activeTab === 'itinerary'" key="itinerary" class="space-y-6">
+                <div v-for="(day, index) in itinerary" :key="index" class="bg-white rounded-[24px] p-5 shadow-card border border-gray-50">
+                    <div class="flex items-center justify-between mb-5 border-b border-dashed border-gray-100 pb-3">
+                        <div class="flex items-center gap-3">
+                            <div class="bg-thai-green text-white text-xs font-bold w-12 h-12 rounded-xl flex flex-col items-center justify-center shadow-sm font-thai leading-tight">
+                                <span>DAY</span>
+                                <span class="text-lg">{{ index + 1 }}</span>
+                            </div>
+                            <div>
+                                <span class="block text-xs text-gray-400 font-bold mb-0.5">{{ day.weekday }}</span>
+                                <h3 class="font-bold text-lg text-thai-darkGreen">{{ day.dateShort }}</h3>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="space-y-6 pl-2">
+                        <div v-for="(item, i) in day.events" :key="i" class="relative pl-6 border-l-2 border-gray-100 last:border-0 pb-1">
+                            <div class="absolute -left-[7px] top-1 w-3.5 h-3.5 rounded-full border-2 border-white shadow-sm"
+                                 :class="item.highlight ? 'bg-thai-yellow' : 'bg-thai-green'"></div>
+                            
+                            <div class="mb-3 group">
+                                <div class="flex justify-between items-baseline mb-1">
+                                    <h4 class="font-bold text-base text-gray-800">{{ item.title }}</h4>
+                                    <span class="text-xs font-bold text-thai-green bg-green-50 px-2 py-0.5 rounded-md">{{ item.time }}</span>
+                                </div>
+                                <p class="text-sm text-gray-500 leading-relaxed mb-2">{{ item.note }}</p>
+                                
+                                <a v-if="item.map" :href="item.map" target="_blank" 
+                                   class="inline-flex items-center text-xs font-bold text-thai-green bg-thai-bg px-3 py-1.5 rounded-lg hover:bg-green-100 transition-colors border border-green-100">
+                                    <i class="fas fa-location-arrow mr-1.5"></i> 導航
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div v-else-if="activeTab === 'checklist'" key="checklist" class="pb-20">
+                <div class="bg-white rounded-[30px] p-6 shadow-soft min-h-[60vh] relative">
+                    
+                    <div class="flex items-center mb-6">
+                        <div class="w-1.5 h-6 bg-blue-500 rounded-full mr-3"></div>
+                        <h2 class="text-xl font-bold text-gray-800">行前打包 (完整)</h2>
+                    </div>
+
+                    <div class="space-y-6">
+                        <div v-for="(item, index) in checklist" :key="index" class="flex items-start group cursor-pointer" @click="item.checked = !item.checked">
+                            <div class="mr-4 mt-0.5">
+                                <input type="checkbox" class="custom-checkbox cursor-pointer" :checked="item.checked">
+                            </div>
+                            
+                            <div class="flex-1 border-b border-gray-100 pb-4 group-last:border-0">
+                                <h4 class="text-base font-bold text-gray-700 transition-colors" 
+                                    :class="{'text-gray-400 line-through': item.checked}">
+                                    {{ item.title }}
+                                </h4>
+                                <p v-if="item.desc" class="text-xs text-gray-400 mt-1 font-medium">
+                                    {{ item.desc }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="fixed bottom-24 right-6 w-14 h-14 bg-thai-pink text-white rounded-full shadow-float flex items-center justify-center text-2xl cursor-pointer active:scale-90 transition-transform z-30">
+                        <i class="fas fa-plus"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div v-else-if="activeTab === 'tools'" key="tools" class="space-y-6">
+                
+                <section class="bg-white rounded-[24px] p-6 shadow-card border border-gray-50 relative overflow-hidden">
+                    <div class="absolute top-0 right-0 w-24 h-24 bg-thai-yellow opacity-10 rounded-full blur-xl -mr-10 -mt-10"></div>
+                    
+                    <h3 class="font-bold text-lg mb-6 flex items-center text-thai-darkGreen">
+                        <i class="fas fa-coins text-thai-yellow mr-2 text-xl"></i> 匯率換算器
+                    </h3>
+                    
+                    <div class="flex flex-col gap-4">
+                        <div class="bg-thai-bg rounded-2xl p-4 border border-gray-100">
+                            <label class="text-xs text-gray-400 font-bold mb-1 block">輸入泰銖 (THB)</label>
+                            <div class="flex items-center">
+                                <input type="number" v-model="thbAmount" placeholder="0" class="bg-transparent text-3xl font-bold text-thai-darkGreen w-full focus:outline-none font-thai">
+                                <span class="text-sm font-bold text-gray-400">฿</span>
+                            </div>
+                        </div>
+                        
+                        <div class="flex justify-center -my-2 relative z-10">
+                            <div class="bg-white border border-gray-100 rounded-full p-1.5 shadow-sm text-gray-300 text-xs">
+                                <i class="fas fa-arrow-down"></i>
+                            </div>
+                        </div>
+
+                        <div class="bg-green-50 rounded-2xl p-4 border border-green-100">
+                            <label class="text-xs text-green-600 font-bold mb-1 block">約等於台幣 (TWD)</label>
+                            <div class="flex items-center">
+                                <div class="text-3xl font-bold text-green-700 font-thai w-full">{{ twdResult }}</div>
+                                <span class="text-sm font-bold text-green-600">$</span>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="text-[10px] text-center text-gray-400 mt-4 bg-gray-50 py-1 rounded-lg">參考匯率: 1 THB ≈ 0.92 TWD</p>
+                </section>
+
+                <section class="bg-white rounded-[24px] p-6 shadow-card border border-gray-50">
+                    <h3 class="font-bold text-lg mb-5 flex items-center text-thai-darkGreen">
+                        <i class="fas fa-triangle-exclamation text-thai-orange mr-3"></i> 旅遊注意事項
+                    </h3>
+                    <ul class="space-y-4">
+                        <li v-for="(note, index) in travelNotes" :key="index" class="flex gap-4">
+                            <div class="w-10 h-10 rounded-full bg-thai-bg flex items-center justify-center flex-shrink-0 text-thai-green">
+                                <i :class="note.icon"></i>
+                            </div>
+                            <div class="pt-0.5">
+                                <h4 class="font-bold text-sm text-gray-800 mb-1">{{ note.title }}</h4>
+                                <p class="text-xs text-gray-500 leading-relaxed">{{ note.desc }}</p>
+                            </div>
+                        </li>
+                    </ul>
+                </section>
+            </div>
+
+        </transition>
+    </main>
+
+</div>
+
+<script>
+    const { createApp, ref, computed, onMounted } = Vue;
+
+    createApp({
+        setup() {
+            const activeTab = ref('itinerary');
+            const thbAmount = ref('');
+
+            // Tabs 定義
+            const tabs = {
+                itinerary: { label: '行程', icon: 'fas fa-map' },
+                checklist: { label: '清單', icon: 'fas fa-tasks' },
+                tools: { label: '工具', icon: 'fas fa-compass' }
+            };
+
+            // 匯率計算
+            const twdResult = computed(() => {
+                if (!thbAmount.value) return 0;
+                return Math.round(thbAmount.value * 0.92).toLocaleString();
+            });
+
+            // 倒數計時
+            const countdown = ref({ days: 0, hours: 0 });
+            const updateCountdown = () => {
+                const target = new Date("2026-01-01T00:00:00").getTime();
+                const now = new Date().getTime();
+                const diff = target - now;
+                if (diff > 0) {
+                    countdown.value.days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                    countdown.value.hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                } else {
+                    countdown.value = { days: 0, hours: 0 };
+                }
+            };
+
+            // 清單資料 (依照您提供的圖片更新)
+            const checklist = ref([
+                { title: '護照', desc: '效期需 6 個月以上', checked: false },
+                { title: '電子入境卡 (TDAC) 截圖 QR', desc: '', checked: false },
+                { title: '美金', desc: '', checked: false },
+                { title: '信用卡 / Apple Pay', desc: '', checked: false },
+                { title: '行動電源', desc: '隨身攜帶', checked: false },
+                { title: '保健食品 or 藥品', desc: '腸胃藥 / 感冒藥', checked: false },
+                { title: '防蚊液 / 蚊蟲叮咬藥膏', desc: '', checked: false },
+                { title: '防曬用品', desc: '防曬乳、墨鏡、遮陽帽', checked: false },
+                { title: '盥洗用品', desc: '浴巾 / 牙刷 / 牙膏', checked: false },
+                { title: '衣服、內衣褲', desc: '最少 5 套', checked: false },
+                { title: '睡衣', desc: '', checked: false },
+                { title: '薄外套', desc: '冷氣房 / 溫差', checked: false },
+                { title: '好走的鞋 / 涼拖鞋', desc: '', checked: false },
+                { title: '手機 / 相機 / 充電器', desc: '', checked: false },
+                { title: '[重要] 電子菸 (違法)', desc: '絕對禁止攜帶', checked: false },
+            ]);
+
+            // 旅遊注意事項
+            const travelNotes = ref([
+                 { icon: 'fas fa-passport', title: '簽證', desc: '目前台灣護照免簽停留 60 天。請備妥回程機票。' },
+                 { icon: 'fas fa-vest', title: '服裝儀容', desc: '進寺廟(大皇宮)需穿有袖上衣、過膝褲/裙。' },
+                 { icon: 'fas fa-hand-holding-dollar', title: '小費', desc: '按摩/床頭約 20-50 泰銖；計程車通常不找零。' },
+                 { icon: 'fas fa-droplet', title: '飲水', desc: '切勿飲用自來水，請購買瓶裝水。' },
+                 { icon: 'fas fa-ban', title: '大麻規範', desc: '公共場所禁止吸食，絕對禁止攜帶回台灣。' },
+                 { icon: 'fas fa-car', title: '交通', desc: '善用 Grab/Bolt。過馬路注意左駕來車。' },
+            ]);
+
+            // 行程資料 (保持原本)
+            const itinerary = ref([
+                {
+                    dateShort: "01/01", weekday: "週四",
+                    events: [
+                        { time: "12:35", title: "✈️ 抵達 BKK 機場", note: "JX741 班機抵達", map: "https://www.google.com/maps/search/?api=1&query=Suvarnabhumi+Airport,JX741" },
+                        { time: "14:00", title: "🏨 Check-in 住宿", note: "Chap’s House Ladprao", map: "https://maps.app.goo.gl/USqCEvweg11Ccxnk6?g_st=ipc」", highlight: true },
+                        { time: "16:30", title: "🛍️ Terminal 21 Asok", note: "晚餐：Pier 21 美食街", map: "https://www.google.com/maps/search/?api=1&query=Terminal+21+Asok,MRT" },
+                        { time: "19:30", title: "🍖 Jodd Fairs 喬德夜市", note: "火山排骨、水果冰沙", map: "https://www.google.com/maps/search/?api=1&query=Jodd+Fairs+Rama+9,MRT" }
+                    ]
+                },
+                {
+                    dateShort: "01/02", weekday: "週五",
+                    events: [
+                        { time: "09:30", title: "☕ Factory Coffee", note: "冠軍咖啡 (Phaya Thai)", map: "https://www.google.com/maps/search/?api=1&query=Factory+Coffee+Bangkok,BTS" },
+                        { time: "11:00", title: "🍛 紅大哥水門雞飯", note: "總店用餐", map: "https://www.google.com/maps/search/?api=1&query=Go-Ang+Kaomunkai+Pratunam,步行前往" },
+                        { time: "13:00", title: "🛍️ Siam 商圈", note: "Central World / Lyn 包包", map: "https://www.google.com/maps/search/?api=1&query=Central+World+Bangkok,曼谷購物中心地標" },
+                        { time: "21:00", title: "🍷 Nana Plaza", note: "成人夜生活體驗", map: "https://www.google.com/maps/search/?api=1&query=Nana+Plaza,BTS", highlight: true }
+                    ]
+                },
+                {
+                    dateShort: "01/03", weekday: "週六",
+                    events: [
+                        { time: "09:30", title: "🛍️ 洽圖洽週末市集", note: "MRT Kamphaeng Phet 2號出口", map: "https://www.google.com/maps/search/?api=1&query=Chatuchak+Weekend+Market,MRT", highlight: true },
+                        { time: "16:30", title: "🌇 Mahanakhon 像素大廈", note: "日落時段最佳", map: "https://www.google.com/maps/search/?api=1&query=Mahanakhon+SkyWalk,BTS" },
+                        { time: "19:00", title: "🍽️ Dusit Central Park", note: "晚餐：米其林餐廳", map: "https://www.google.com/maps/search/?api=1&query=Dusit+Central+Park,位於" },
+                        { time: "21:00", title: "🍢 朱拉隆功夜市", note: "Banthat Thong 宵夜街", map: "https://www.google.com/maps/search/?api=1&query=Banthat+Thong+Road,MRT" }
+                    ]
+                },
+                {
+                    dateShort: "01/04", weekday: "週日",
+                    events: [
+                        { time: "09:00", title: "🛶 空叻瑪榮水上市場", note: "Grab 前往 (約40分)", map: "https://www.google.com/maps/search/?api=1&query=Khlong+Lat+Mayom+Floating+Market,需搭計程車/Grab", highlight: true },
+                        { time: "13:15", title: "👗 Nana Photo Studio", note: "租泰服體驗 (臥佛寺對面)", map: "https://www.google.com/maps/search/?api=1&query=Nana+Photo+Studio+Maha+Rat+Rd,臥佛寺對面" },
+                        { time: "16:00", title: "☕ 嵩越路 Song Wat", note: "老屋畫廊、文青咖啡", map: "https://www.google.com/maps/search/?api=1&query=Song+Wat+Road,搭船至" },
+                        { time: "19:00", title: "🚢 昭披耶河晚餐郵輪", note: "River City 碼頭出發", map: "https://www.google.com/maps/search/?api=1&query=River+City+Bangkok,步行可達" },
+                        { time: "21:30", title: "🍺 考山路 Khaosan Rd", note: "背包客狂歡氣氛", map: "https://www.google.com/maps/search/?api=1&query=Khaosan+Road,短程計程車" }
+                    ]
+                },
+                {
+                    dateShort: "01/05", weekday: "週一",
+                    events: [
+                        { time: "11:00", title: "🏢 ICONSIAM 暹羅天地", note: "室內水上市場 / Pop Mart", map: "https://www.google.com/maps/search/?api=1&query=ICONSIAM,接駁船直達" },
+                        { time: "17:30", title: "🎡 Asiatique 河濱夜市", note: "人妖秀 / 倉庫餐廳", map: "https://www.google.com/maps/search/?api=1&query=Asiatique+The+Riverfront,接駁船直達" }
+                    ]
+                },
+                {
+                    dateShort: "01/06", weekday: "週二",
+                    events: [
+                        { time: "10:00", title: "🛍️ Ladprao 最後採買", note: "Big C / 藥妝", map: "https://www.google.com/maps/search/?api=1&query=Central+Plaza+Ladprao,住宿附近" },
+                        { time: "13:30", title: "🚕 前往 BKK 機場", note: "預留塞車時間 JX746", map: "https://www.google.com/maps/search/?api=1&query=Suvarnabhumi+Airport", highlight: true }
+                    ]
+                }
+            ]);
+
+            onMounted(() => {
+                updateCountdown();
+                setInterval(updateCountdown, 60000);
+            });
+
+            return {
+                activeTab,
+                tabs,
+                thbAmount,
+                twdResult,
+                countdown,
+                checklist,
+                travelNotes,
+                itinerary
+            };
+        }
+    }).mount('#app');
+</script>
+
+</body>
+</html>
